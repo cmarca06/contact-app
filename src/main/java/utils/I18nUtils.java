@@ -2,7 +2,6 @@ package utils;
 
 import java.awt.Component;
 import java.awt.Container;
-import java.util.Locale;
 import java.util.ResourceBundle;
 
 import javax.swing.AbstractButton;
