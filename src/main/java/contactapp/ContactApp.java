@@ -1,12 +1,18 @@
 package contactapp;
 
+import com.formdev.flatlaf.FlatLightLaf;
 import controller.ContactViewController;
+import javax.swing.SwingUtilities;
 import model.ContactModel;
 import view.ContactView;
 
 public class ContactApp {
 
     public static void main(String[] args) {
+        
+        FlatLightLaf.setup();
+
+        SwingUtilities.invokeLater(() -> {
         // Inicializar Modelo y Vista
         ContactModel contactModel = new ContactModel();
         ContactView contactView = new ContactView();
@@ -17,5 +23,6 @@ public class ContactApp {
 
         // Hacer visible la vista
         contactView.setVisible(true);
+        });
     }
 }
