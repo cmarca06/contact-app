@@ -271,15 +271,16 @@ public class ContactListController implements ActionListener, KeyListener, Mouse
     }
 
     /**
-     * Importa datos de un archivo CSV seleccionado por el usuario.
+     * Importa datos de un archivo seleccionado por el usuario.
      */
     private void importData() {
-        // Abrir diálogo para seleccionar archivo CSV
+        // Abrir diálogo para seleccionar archivo 
         JFileChooser chooser = new JFileChooser();
         int option = chooser.showOpenDialog(contactList);
         if (option == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
-
+            String fileName = file.getName().toLowerCase();
+            boolean isJson = fileName.endsWith(".json");
             // Usar SwingWorker para no bloquear la interfaz durante la importación
             new SwingWorker<ImportResult, Integer>() {
                 @Override
@@ -290,7 +291,12 @@ public class ContactListController implements ActionListener, KeyListener, Mouse
                     // Retardo artificial para visualizar la barra
                     try {
                         Thread.sleep(500);
-                        return contactModel.importFromCsv(file);
+                        // Realizar la importación según el tipo de archivo
+                        if (isJson) {
+                            return contactModel.importFromJson(file);
+                        } else {
+                            return contactModel.importFromCsv(file);
+                        }
                     } catch (RuntimeException e) {
                         throw e;
                     } catch (InterruptedException e) {
@@ -328,16 +334,17 @@ public class ContactListController implements ActionListener, KeyListener, Mouse
     }
 
     /**
-     * Exporta datos a un archivo CSV seleccionado por el usuario.
+     * Exporta datos a un archivo seleccionado por el usuario.
      */
     private void exportData() {
-        // Abrir diálogo para seleccionar archivo CSV
+        // Abrir diálogo para seleccionar archivo
         JFileChooser chooser = new JFileChooser();
         int option = chooser.showSaveDialog(contactList);
         if (option == JFileChooser.APPROVE_OPTION) {
             // Obtener archivo seleccionado
             File file = chooser.getSelectedFile();
-
+            String fileName = file.getName().toLowerCase();
+            boolean isJson = fileName.endsWith(".json");
             // Usar SwingWorker para no bloquear la interfaz durante la exportación
             new SwingWorker<Void, Integer>() {
                 @Override
@@ -348,7 +355,12 @@ public class ContactListController implements ActionListener, KeyListener, Mouse
                     // Retardo artificial para visualizar la barra
                     try {
                         Thread.sleep(500);
-                        contactModel.exportToCsv(file);
+                        // Realizar la exportación según el tipo de archivo
+                        if (isJson) {
+                            contactModel.exportToJson(file);
+                        } else {
+                            contactModel.exportToCsv(file);
+                        }
                     } catch (InterruptedException e) {
                         UIUtils.notifyError("Error inesperado durante la exportación: " + e.getMessage(), notificationHandler);
                     }

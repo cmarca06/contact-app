@@ -167,6 +167,64 @@ public class ContactModel {
     }
 
     /**
+     * Importa contactos desde un archivo JSON validando duplicados mediante hilos.
+     * @param file Archivo JSON a importar.
+     * @return Resultado de la importación.
+     * @throws RuntimeException si ocurre un error de lectura o formato.
+     */
+    public ImportResult importFromJson(File file) {
+        int imported = 0;
+        int duplicates = 0;
+        List<Contact> pendingContacts = new ArrayList<>();
+        try {
+            List<Contact> importedContacts = contactRepository.importContactsFromJson(file);
+            if (importedContacts == null) importedContacts = new ArrayList<>();
+            for (Contact contact : importedContacts) {
+                ContactValidationThread validationThread = new ContactValidationThread(this, contact);
+                validationThread.start();
+                try {
+                    validationThread.join();
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Validación interrumpida durante la importación", ex);
+                }
+                if (validationThread.isDuplicate()) {
+                    duplicates++;
+                    continue;
+                }
+                pendingContacts.add(contact);
+                imported++;
+            }
+            if (!pendingContacts.isEmpty()) {
+                synchronized (contactListLock) {
+                    contactList.addAll(pendingContacts);
+                    contactRepository.saveContacts(contactList);
+                }
+            }
+            return new ImportResult(imported, duplicates);
+        } catch (IOException ex) {
+            throw new RuntimeException("Error al importar contactos (JSON): " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Exporta los contactos actuales a un archivo JSON.
+     * @param file Archivo destino.
+     * @throws RuntimeException si ocurre un error de escritura.
+     */
+    public void exportToJson(File file) {
+        try {
+            List<Contact> snapshot;
+            synchronized (contactListLock) {
+                snapshot = new ArrayList<>(contactList);
+            }
+            contactRepository.exportContactsToJson(file, snapshot);
+        } catch (IOException ex) {
+            throw new RuntimeException("Error al exportar contactos (JSON): " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
      * Exporta los contactos actuales a un archivo CSV.
      *
      * @param file Archivo destino.

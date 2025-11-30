@@ -9,12 +9,40 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import utils.ContactJsonEsAdapter;
 
 public class ContactRepository {
 
     private static final String FILE_NAME = "contacts.csv";
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private static final String SEPARATOR = ";";
+    private static final Gson GSON = new GsonBuilder().registerTypeAdapter(model.Contact.class, new ContactJsonEsAdapter()).setDateFormat("yyyy-MM-dd HH:mm:ss").setPrettyPrinting().create();
+    /**
+     * Importa contactos desde un archivo JSON.
+     * @param file Archivo JSON
+     * @return Lista de contactos importados
+     * @throws IOException si ocurre un error de lectura
+     */
+    public List<Contact> importContactsFromJson(File file) throws IOException {
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            return GSON.fromJson(br, new TypeToken<List<Contact>>(){}.getType());
+        }
+    }
+
+    /**
+     * Exporta contactos a un archivo JSON.
+     * @param file Archivo JSON
+     * @param contacts Lista de contactos a exportar
+     * @throws IOException si ocurre un error de escritura
+     */
+    public void exportContactsToJson(File file, List<Contact> contacts) throws IOException {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
+            GSON.toJson(contacts, bw);
+        }
+    }
 
     /**
      * Carga contactos desde un archivo CSV.
@@ -130,7 +158,6 @@ public class ContactRepository {
                     firstLine = false;
                     continue;
                 }
-
                 // Dividir la línea en campos
                 String[] data = line.split(SEPARATOR, -1);
                 // Validar que la línea tenga el formato correcto
