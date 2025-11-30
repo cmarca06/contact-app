@@ -274,24 +274,35 @@ public class ContactListController implements ActionListener, KeyListener, Mouse
      * Importa datos de un archivo seleccionado por el usuario.
      */
     private void importData() {
-        // Abrir diálogo para seleccionar archivo 
+        String[] options = {"CSV", "JSON"};
+        String selected = (String) JOptionPane.showInputDialog(
+                contactList,
+                "Selecciona el formato a importar:",
+                "Importar contactos",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        if (selected == null) return;
         JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Selecciona el archivo a importar");
+        if (selected.equals("CSV")) {
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Archivos CSV", "csv"));
+        } else {
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Archivos JSON", "json"));
+        }
         int option = chooser.showOpenDialog(contactList);
         if (option == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
-            String fileName = file.getName().toLowerCase();
-            boolean isJson = fileName.endsWith(".json");
-            // Usar SwingWorker para no bloquear la interfaz durante la importación
+            boolean isJson = selected.equals("JSON");
             new SwingWorker<ImportResult, Integer>() {
                 @Override
                 protected ImportResult doInBackground() {
-                    // Mostrar barra de progreso
                     contactList.getjProgressBar().setVisible(true);
                     contactList.getjProgressBar().setIndeterminate(true);
-                    // Retardo artificial para visualizar la barra
                     try {
                         Thread.sleep(500);
-                        // Realizar la importación según el tipo de archivo
                         if (isJson) {
                             return contactModel.importFromJson(file);
                         } else {
@@ -303,17 +314,12 @@ public class ContactListController implements ActionListener, KeyListener, Mouse
                         throw new RuntimeException("Error inesperado durante la importación: ", e);
                     }
                 }
-
                 @Override
                 protected void done() {
                     contactList.getjProgressBar().setIndeterminate(false);
                     contactList.getjProgressBar().setVisible(false);
-
-                    // Mostrar resultados de la importación
                     try {
-                        // Obtener resultado de la importación
                         ImportResult result = get();
-                        // Actualizar tabla con todos los contactos
                         TableUtils.fillContactsTable(contactList.getjTableList(), contactModel.getAllContacts());
                         StringBuilder message = new StringBuilder("Importación realizada correctamente. Nuevos registros: ")
                                 .append(result.getImportedCount());
@@ -322,10 +328,8 @@ public class ContactListController implements ActionListener, KeyListener, Mouse
                         }
                         UIUtils.notifyInfo(message.toString(), notificationHandler);
                     } catch (InterruptedException ex) {
-                        // Manejo de errores durante la importación
                         Thread.currentThread().interrupt();
                     } catch (ExecutionException ex) {
-                        // Mostrar errores durante la importación
                         UIUtils.notifyError(ex.getCause() != null ? ex.getCause().getMessage() : "Error al importar contactos", notificationHandler);
                     }
                 }
@@ -337,36 +341,55 @@ public class ContactListController implements ActionListener, KeyListener, Mouse
      * Exporta datos a un archivo seleccionado por el usuario.
      */
     private void exportData() {
-        // Abrir diálogo para seleccionar archivo
+        String[] options = {"CSV", "JSON"};
+        String selected = (String) JOptionPane.showInputDialog(
+                contactList,
+                "Selecciona el formato a exportar:",
+                "Exportar contactos",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+        if (selected == null) return;
         JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Selecciona el archivo de destino");
+        if (selected.equals("CSV")) {
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Archivos CSV", "csv"));
+        } else {
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Archivos JSON", "json"));
+        }
         int option = chooser.showSaveDialog(contactList);
         if (option == JFileChooser.APPROVE_OPTION) {
-            // Obtener archivo seleccionado
             File file = chooser.getSelectedFile();
-            String fileName = file.getName().toLowerCase();
-            boolean isJson = fileName.endsWith(".json");
-            // Usar SwingWorker para no bloquear la interfaz durante la exportación
+            boolean isJson = selected.equals("JSON");
+            // Sugerir extensión si no está presente
+            String filePath = file.getAbsolutePath();
+            final File exportFile;
+            if (isJson && !filePath.toLowerCase().endsWith(".json")) {
+                exportFile = new File(filePath + ".json");
+            } else if (!isJson && !filePath.toLowerCase().endsWith(".csv")) {
+                exportFile = new File(filePath + ".csv");
+            } else {
+                exportFile = file;
+            }
             new SwingWorker<Void, Integer>() {
                 @Override
                 protected Void doInBackground() {
-                    // Mostrar barra de progreso
                     contactList.getjProgressBar().setVisible(true);
                     contactList.getjProgressBar().setIndeterminate(true);
-                    // Retardo artificial para visualizar la barra
                     try {
                         Thread.sleep(500);
-                        // Realizar la exportación según el tipo de archivo
                         if (isJson) {
-                            contactModel.exportToJson(file);
+                            contactModel.exportToJson(exportFile);
                         } else {
-                            contactModel.exportToCsv(file);
+                            contactModel.exportToCsv(exportFile);
                         }
                     } catch (InterruptedException e) {
                         UIUtils.notifyError("Error inesperado durante la exportación: " + e.getMessage(), notificationHandler);
                     }
                     return null;
                 }
-
                 @Override
                 protected void done() {
                     contactList.getjProgressBar().setIndeterminate(false);
